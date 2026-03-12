@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulting Community Connections</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Password Gate -->
+  <div class="password-gate" id="password-gate">
+    <div class="password-card">
+      <img src="assets/logo.png" alt="CCC Logo" class="password-logo">
+      <h1 class="password-title">Consulting Community Connections</h1>
+      <p class="password-subtitle">Enter the community password to access the directory</p>
+      <form id="password-form" class="password-form">
+        <input type="password" id="password-input" class="password-input" placeholder="Enter password" autocomplete="off">
+        <button type="submit" class="password-submit">Access Directory</button>
+        <p class="password-error" id="password-error" hidden>Incorrect password. Please try again.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="assets/logo.png" alt="CCC Logo" class="logo">
+        <div>
+          <h1 class="site-title">Consulting Community Connections</h1>
+          <p class="site-subtitle">Find the right consultant to collaborate with</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- Search -->
+    <div class="search-wrapper">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input
+          type="text"
+          id="search"
+          class="search-input"
+          placeholder="Search by name, location, or expertise..."
+          autocomplete="off"
+        >
+        <button id="clear-search" class="clear-btn" hidden aria-label="Clear search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <h3 class="filter-label">Expertise</h3>
+        <div class="filter-chips" id="expertise-filters"></div>
+      </div>
+      <div class="filter-group">
+        <h3 class="filter-label">Skills</h3>
+        <div class="filter-chips" id="skills-filters"></div>
+      </div>
+      <button id="clear-filters" class="clear-filters-btn" hidden>Clear all filters</button>
+    </div>
+
+    <!-- Results count -->
+    <div class="results-bar">
+      <span id="results-count"></span>
+    </div>
+
+    <!-- Consultant cards -->
+    <div class="cards-grid" id="cards-grid"></div>
+
+    <!-- Loading state -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Loading consultants...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="empty-state" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <p>No consultants match your search.</p>
+      <button class="reset-btn" id="reset-all">Reset filters</button>
+    </div>
+  </main>
+
+  <!-- Consultant detail modal -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modal-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Consulting Community Connections &mdash; Connecting education consultants worldwide</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
