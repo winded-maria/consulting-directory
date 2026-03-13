@@ -54,7 +54,13 @@ const SKILL_TAGS = [
 let allConsultants = [];
 let activeExpertise = new Set();
 let activeSkills = new Set();
+let activeLanguages = new Set();
+let activeCountries = new Set();
 let searchQuery = '';
+
+// Dynamic tags (populated after data loads)
+let LANGUAGE_TAGS = [];
+let COUNTRY_TAGS = [];
 
 // ===== DOM Elements =====
 const searchInput = document.getElementById('search');
@@ -62,6 +68,8 @@ const clearSearchBtn = document.getElementById('clear-search');
 const expertiseFilters = document.getElementById('expertise-filters');
 const skillsFilters = document.getElementById('skills-filters');
 const clearFiltersBtn = document.getElementById('clear-filters');
+const languageFilters = document.getElementById('language-filters');
+const countryFilters = document.getElementById('country-filters');
 const cardsGrid = document.getElementById('cards-grid');
 const loadingEl = document.getElementById('loading');
 const emptyState = document.getElementById('empty-state');
@@ -158,6 +166,94 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// ===== Dynamic Tag Extraction =====
+const KNOWN_LANGUAGES = [
+  'Arabic', 'Danish', 'English', 'French', 'German', 'Greek', 'Hebrew',
+  'Hindi', 'Indonesian', 'Italian', 'Japanese', 'Portuguese', 'Russian',
+  'Spanish', 'Swahili', 'Swedish', 'Urdu'
+];
+
+function normalizeLanguage(raw) {
+  // Strip emoji prefixes
+  const cleaned = raw.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '').trim();
+  // Match against known languages (case-insensitive prefix match)
+  for (const lang of KNOWN_LANGUAGES) {
+    if (cleaned.toLowerCase().startsWith(lang.toLowerCase())) return lang;
+  }
+  // Check for abbreviations
+  const abbrMap = { 'en': 'English', 'fr': 'French', 'sp': 'Spanish', 'por': 'Portuguese', 'ja': 'Japanese' };
+  const lower = cleaned.toLowerCase().replace(/[^a-z]/g, '');
+  for (const [abbr, lang] of Object.entries(abbrMap)) {
+    if (lower === abbr || lower.startsWith(abbr)) return lang;
+  }
+  return null; // skip unrecognizable entries
+}
+
+// US state abbreviations and codes to normalize
+const US_STATES = new Set([
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN',
+  'IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV',
+  'NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN',
+  'TX','UT','VT','VA','WA','WV','WI','WY','DC'
+]);
+
+const COUNTRY_ALIASES = {
+  'US': 'USA', 'U.S.': 'USA', 'U.S': 'USA', 'United States': 'USA',
+  'UK': 'United Kingdom', 'MX': 'Mexico'
+};
+
+function normalizeCountry(raw) {
+  // Strip all parenthetical content first, then handle dual locations
+  const noParen = raw.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+  // Handle entries with "and" or "/" (dual locations) — take first
+  const parts = noParen.split(/\band\b|\//i);
+  const primary = parts[0].trim();
+  // Split by comma
+  const cleaned = primary;
+
+  const segments = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+
+  // Walk backwards through segments to find a real country (skip US states, cities, parentheticals)
+  for (let i = segments.length - 1; i >= 0; i--) {
+    let candidate = segments[i];
+    // Strip parenthetical notes and extra whitespace
+    candidate = candidate.replace(/\([^)]*\)/g, '').trim();
+    // Normalize aliases first
+    if (COUNTRY_ALIASES[candidate]) candidate = COUNTRY_ALIASES[candidate];
+    // Skip US state abbreviations — the country is USA
+    if (US_STATES.has(candidate.toUpperCase())) return 'USA';
+    // Skip empty or very short non-country strings
+    if (!candidate || candidate.length < 2) continue;
+    // If it's a known alias result, return it
+    if (Object.values(COUNTRY_ALIASES).includes(candidate)) return candidate;
+    // Accept if it looks like a country name (not a city — heuristic: if it's the last or only segment)
+    if (i === segments.length - 1 || segments.length === 1) return candidate;
+  }
+  return segments[segments.length - 1]?.replace(/\(.*?\)?/g, '').trim() || null;
+}
+
+function buildDynamicTags(consultants) {
+  const langSet = new Set();
+  const countrySet = new Set();
+
+  consultants.forEach(c => {
+    // Split languages by comma, semicolon, newline, or "and"
+    if (c.languages) {
+      c.languages.split(/[,;\n]|\band\b/).forEach(lang => {
+        const normalized = normalizeLanguage(lang.trim());
+        if (normalized) langSet.add(normalized);
+      });
+    }
+    if (c.location) {
+      const normalized = normalizeCountry(c.location.trim());
+      if (normalized) countrySet.add(normalized);
+    }
+  });
+
+  LANGUAGE_TAGS = [...langSet].sort((a, b) => a.localeCompare(b));
+  COUNTRY_TAGS = [...countrySet].sort((a, b) => a.localeCompare(b));
+}
+
 // ===== Rendering =====
 function renderFilters() {
   expertiseFilters.innerHTML = EXPERTISE_TAGS.map(tag =>
@@ -168,7 +264,15 @@ function renderFilters() {
     `<button class="chip${activeSkills.has(tag) ? ' active' : ''}" data-filter="skills" data-tag="${tag}">${tag}</button>`
   ).join('');
 
-  clearFiltersBtn.hidden = activeExpertise.size === 0 && activeSkills.size === 0;
+  languageFilters.innerHTML = LANGUAGE_TAGS.map(tag =>
+    `<button class="chip${activeLanguages.has(tag) ? ' active' : ''}" data-filter="language" data-tag="${tag}">${tag}</button>`
+  ).join('');
+
+  countryFilters.innerHTML = COUNTRY_TAGS.map(tag =>
+    `<button class="chip${activeCountries.has(tag) ? ' active' : ''}" data-filter="country" data-tag="${tag}">${tag}</button>`
+  ).join('');
+
+  clearFiltersBtn.hidden = activeExpertise.size === 0 && activeSkills.size === 0 && activeLanguages.size === 0 && activeCountries.size === 0;
 }
 
 function renderCards(consultants) {
@@ -244,7 +348,7 @@ function openModal(consultant) {
     </a>`;
   }
 
-  // Clean notes â remove URLs that we already show as buttons
+  // Clean notes — remove URLs that we already show as buttons
   let cleanNotes = c.notes || '';
   if (urlMatch) {
     cleanNotes = cleanNotes.replace(urlMatch[0], '').trim();
@@ -314,6 +418,19 @@ function filterConsultants() {
       if (!hasSkill) return false;
     }
 
+    // Language filter
+    if (activeLanguages.size > 0) {
+      const langs = c.languages ? c.languages.split(/[,;\n]|\band\b/).map(l => normalizeLanguage(l.trim())).filter(Boolean) : [];
+      const hasLang = [...activeLanguages].some(t => langs.includes(t));
+      if (!hasLang) return false;
+    }
+
+    // Country filter
+    if (activeCountries.size > 0) {
+      const country = c.location ? normalizeCountry(c.location.trim()) : '';
+      if (!activeCountries.has(country)) return false;
+    }
+
     return true;
   });
 
@@ -348,7 +465,9 @@ function setupEventListeners() {
 
     const filter = chip.dataset.filter;
     const tag = chip.dataset.tag;
-    const set = filter === 'expertise' ? activeExpertise : activeSkills;
+    const setMap = { expertise: activeExpertise, skills: activeSkills, language: activeLanguages, country: activeCountries };
+    const set = setMap[filter];
+    if (!set) return;
 
     if (set.has(tag)) {
       set.delete(tag);
@@ -414,6 +533,14 @@ function getFilteredConsultants() {
       const tags = extractTags(c.expertise);
       if (![...activeSkills].some(t => tags.includes(t))) return false;
     }
+    if (activeLanguages.size > 0) {
+      const langs = c.languages ? c.languages.split(/[,;\n]|\band\b/).map(l => normalizeLanguage(l.trim())).filter(Boolean) : [];
+      if (![...activeLanguages].some(t => langs.includes(t))) return false;
+    }
+    if (activeCountries.size > 0) {
+      const country = c.location ? normalizeCountry(c.location.trim()) : '';
+      if (!activeCountries.has(country)) return false;
+    }
     return true;
   });
 }
@@ -421,6 +548,8 @@ function getFilteredConsultants() {
 function resetFilters() {
   activeExpertise.clear();
   activeSkills.clear();
+  activeLanguages.clear();
+  activeCountries.clear();
   renderFilters();
   filterConsultants();
 }
@@ -431,8 +560,10 @@ async function init() {
   renderFilters();
 
   allConsultants = await fetchConsultants();
+  buildDynamicTags(allConsultants);
   loadingEl.hidden = true;
 
+  renderFilters();
   renderCards(allConsultants);
 }
 
