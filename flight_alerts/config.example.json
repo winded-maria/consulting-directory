@@ -1,0 +1,24 @@
+{
+  "serpapi_key": "",
+  "origins": ["MEX", "NLU", "TLC"],
+  "seed_baselines": {
+    "MEX": 200.00,
+    "NLU": 210.00,
+    "TLC": 240.00
+  },
+  "search": {
+    "outbound_offset_days": 30,
+    "trip_length_days": 4,
+    "adults": 1,
+    "currency": "USD"
+  },
+  "smtp": {
+    "enabled": false,
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "username": "you@example.com",
+    "password": "app-password",
+    "from": "you@example.com",
+    "to": ["you@example.com"]
+  }
+}
