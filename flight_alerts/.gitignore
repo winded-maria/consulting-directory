@@ -1,3 +1,5 @@
 config.json
 price_history.json
 *.log
+__pycache__/
+*.pyc

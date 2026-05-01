@@ -1,5 +1,20 @@
 {
-  "serpapi_key": "",
+  "providers": {
+    "kiwi": {
+      "enabled": true,
+      "api_key": ""
+    },
+    "amadeus": {
+      "enabled": true,
+      "client_id": "",
+      "client_secret": "",
+      "environment": "test"
+    },
+    "serpapi_google_flights": {
+      "enabled": false,
+      "api_key": ""
+    }
+  },
   "origins": ["MEX", "NLU", "TLC"],
   "seed_baselines": {
     "MEX": 200.00,
