@@ -1,0 +1,56 @@
+name: Cozumel flight price alert
+
+# Runs daily at 14:00 UTC (08:00 in Mexico City — CST, UTC-6 year-round).
+# Also triggerable on demand from the Actions tab via "Run workflow".
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-fares:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r flight_alerts/requirements.txt
+
+      - name: Configure
+        run: cp flight_alerts/config.example.json flight_alerts/config.json
+
+      - name: Check flight prices
+        id: alert
+        run: |
+          set +e
+          python3 flight_alerts/alert.py | tee alert_output.txt
+          rc=${PIPESTATUS[0]}
+          if grep -q "^\[Flight alert\] LOW" alert_output.txt; then
+            echo "low_found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "low_found=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit $rc
+
+      - name: Open issue with alert (emails repo watchers)
+        if: steps.alert.outputs.low_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('alert_output.txt', 'utf8');
+            const today = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Flight alert] LOW fare to Cozumel — ${today}`,
+              body: '```\n' + body + '\n```',
+            });
