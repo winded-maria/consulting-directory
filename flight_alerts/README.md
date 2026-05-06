@@ -6,35 +6,67 @@ airports — **MEX** (Benito Juárez), **NLU** (Felipe Ángeles / AIFA), and
 origin hits the *Low* tier. Cancún (CUN) and Tulum (TQO) are excluded by
 design.
 
-## Sources
+## Quickstart (no signups)
 
-Pluggable providers in `providers/`. Each one is independently enabled in
-`config.json`; per-origin price is the cheapest result across all enabled
-providers, so missing one source just means a slightly less complete
-snapshot — it doesn't break the run.
+The default provider scrapes Google Flights via the
+[`fast-flights`](https://pypi.org/project/fast-flights/) package — no API
+key, no account, just a `pip install`. Setup:
 
-| Provider                  | Coverage                                                        | Get a key                                          |
-|---------------------------|-----------------------------------------------------------------|----------------------------------------------------|
-| `kiwi`                    | Budget meta-search; strong on LCCs (Volaris, VivaAerobus)       | https://tequila.kiwi.com/portal/login              |
-| `amadeus`                 | GDS; strong on full-service carriers (Aeromexico)               | https://developers.amadeus.com/                    |
-| `serpapi_google_flights`  | Google Flights mirror (paid-only, optional)                     | https://serpapi.com/                               |
+```sh
+pip install -r flight_alerts/requirements.txt
+cp flight_alerts/config.example.json flight_alerts/config.json
+python3 flight_alerts/alert.py
+```
+
+That's it. Run-time output prints each origin's cheapest fare and tier.
+A "Low" tier on any origin triggers an alert (stdout by default; SMTP if
+you flip `smtp.enabled` and fill the block in).
+
+### Trade-offs of the scrape path
+
+- HTML scraping is more fragile than an API; if Google changes their
+  layout, `fast-flights` needs an update before this provider works
+  again.
+- Repeated requests from the same IP can get rate-limited by Google.
+  One run per day — what cron does — is well below the threshold.
+- Google's own **Low / Typical / High** label for the route comes back
+  in the response, so when this provider supplies the cheapest fare we
+  use Google's classification directly rather than emulating it.
+
+## Optional: API providers
+
+Pluggable providers live in `providers/`. Any subset can be enabled in
+`config.json`; per-origin price is the cheapest result across all
+enabled providers, with per-provider errors isolated so a single source
+going down doesn't kill the run. These need signups but are more stable
+than scraping.
+
+| Provider                  | Coverage                                                | Get a key                                          |
+|---------------------------|---------------------------------------------------------|----------------------------------------------------|
+| `google_scrape`           | Google Flights via scrape (default; no signup)          | —                                                  |
+| `kiwi`                    | Budget meta-search; strong on LCCs (Volaris, VivaAerobus)| https://tequila.kiwi.com/portal/login              |
+| `amadeus`                 | GDS; strong on full-service carriers (Aeromexico)       | https://developers.amadeus.com/                    |
+| `serpapi_google_flights`  | Google Flights mirror (paid)                            | https://serpapi.com/                               |
 
 Adding more sources is a matter of dropping a new file into `providers/`
 that subclasses `FlightProvider` and registering it in
-`providers/__init__.py`. The orchestrator handles auth caching, error
-isolation per provider, baseline tracking, and notification.
+`providers/__init__.py`.
 
 The Mexican carriers operating MEX/NLU/TLC → CZM (Aeromexico, Volaris,
 VivaAerobus) don't expose public price APIs of their own, so each one is
 reached through whichever aggregator covers it best — Kiwi for the LCCs,
-Amadeus for Aeromexico via GDS.
+Amadeus for Aeromexico via GDS, and Google Flights (scrape or SerpAPI)
+as a meta-source over all of them.
 
 ## How tiers are decided
 
-Google Flights labels fares **Low / Typical / High** relative to recent
-prices on the route; the exact thresholds aren't published, but the
-behavior tracks roughly with a ±20% band around the route's rolling
-average. We replicate that:
+When the cheapest fare comes from `google_scrape`, the orchestrator uses
+**Google's own** Low/Typical/High label for the route — that's what the
+"price tier" indicator on Google Flights shows.
+
+When the cheapest fare comes from an API provider that doesn't expose
+that label, the orchestrator falls back to a Google-Flights-style ±20%
+band around the route's rolling baseline:
 
 | Tier    | Rule                                  |
 |---------|---------------------------------------|
@@ -45,39 +77,8 @@ average. We replicate that:
 The baseline is the rolling average of the last 90 days of observations
 for that origin (auto-recorded in `price_history.json`). Until 7 daily
 samples have accumulated, the baseline falls back to the per-origin seed
-in `config.json`. The seeds shipped in `config.example.json` reflect
-typical 2026 round-trip USD fares for each origin to CZM and can be tuned.
-
-## Setup
-
-1. Sign up for at least one provider above and grab credentials. Two
-   sources is the recommended minimum (one budget aggregator + one GDS)
-   so you catch both LCCs and full-service.
-2. Copy the example config and fill in only the providers you want:
-
-   ```sh
-   cp flight_alerts/config.example.json flight_alerts/config.json
-   ```
-
-   Set each provider's `enabled` and credentials. Adjust
-   `search.outbound_offset_days` / `trip_length_days` for the trip you
-   care about. To get email instead of stdout, fill in `smtp` and set
-   `smtp.enabled` to `true`.
-
-3. Smoke-test without spending API quota:
-
-   ```sh
-   python3 flight_alerts/alert.py --dry-run --sample-price 140
-   ```
-
-4. Run for real:
-
-   ```sh
-   python3 flight_alerts/alert.py
-   ```
-
-   Exit code is 0 unless the config is missing; "no low fare" is normal
-   and just prints a summary including each provider's result per origin.
+in `config.json`. Seeds in `config.example.json` reflect typical 2026
+round-trip USD fares for each origin to CZM and can be tuned.
 
 ## Schedule daily
 
@@ -95,6 +96,7 @@ fine. The script's only state is `price_history.json` next to it.
 
 - `alert.py` — orchestration, baseline/tier logic, notification.
 - `providers/` — one file per source.
+- `requirements.txt` — `fast-flights` for the no-signup default path.
 - `config.example.json` — template; copy to `config.json`.
 - `config.json` — your real config (gitignored).
 - `price_history.json` — rolling per-origin price log (gitignored,

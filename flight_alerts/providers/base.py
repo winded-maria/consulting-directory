@@ -9,6 +9,10 @@ class FareResult:
     currency: str
     airline: str
     source: str
+    # Some sources (Google Flights via scrape) expose their own
+    # Low/Typical/High label for the route. When present the orchestrator
+    # uses it directly instead of computing a baseline classification.
+    external_tier: str | None = None
 
 
 class FlightProvider:

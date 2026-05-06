@@ -145,7 +145,8 @@ def format_alert(low_results: list[dict], all_results: list[dict],
         else:
             lines.append(
                 f"  {r['origin']}: {currency} {r['price']:.2f} -> {r['tier'].upper()} "
-                f"(via {r['source']}; baseline {currency} {r['baseline']:.2f}, "
+                f"(via {r['source']}; tier from {r['tier_source']}; "
+                f"baseline {currency} {r['baseline']:.2f}, "
                 f"source: {r['baseline_source']})"
             )
         for note in r.get("notes", []):
@@ -221,7 +222,12 @@ def main() -> int:
                                 "notes": notes})
             continue
 
-        tier = classify(best.price, baseline)
+        if best.external_tier:
+            tier = best.external_tier
+            tier_source = f"{best.source} (native)"
+        else:
+            tier = classify(best.price, baseline)
+            tier_source = "rolling-baseline"
         samples.append({"checked_on": today.isoformat(), "price": best.price})
         cutoff = today - timedelta(days=HISTORY_WINDOW_DAYS)
         history[origin] = [s for s in samples
@@ -229,8 +235,8 @@ def main() -> int:
 
         result = {
             "origin": origin, "price": best.price, "baseline": baseline,
-            "baseline_source": source, "tier": tier, "airline": best.airline,
-            "source": best.source, "notes": notes,
+            "baseline_source": source, "tier": tier, "tier_source": tier_source,
+            "airline": best.airline, "source": best.source, "notes": notes,
         }
         all_results.append(result)
         if tier == "low":

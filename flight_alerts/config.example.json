@@ -1,11 +1,14 @@
 {
   "providers": {
+    "google_scrape": {
+      "enabled": true
+    },
     "kiwi": {
-      "enabled": true,
+      "enabled": false,
       "api_key": ""
     },
     "amadeus": {
-      "enabled": true,
+      "enabled": false,
       "client_id": "",
       "client_secret": "",
       "environment": "test"
