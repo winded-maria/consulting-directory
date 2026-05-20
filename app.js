@@ -36,7 +36,7 @@ async function sha256(str) {
 
 // ===== Configuration =====
 const SHEET_ID = '1A-_lsUAWcPNtLrj9BLsODJBliTgKIzOtBJwzHth6xTY';
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0&headers=2`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
 // Predefined filter categories
 const EXPERTISE_TAGS = [
@@ -79,46 +79,80 @@ const modalBody = document.getElementById('modal-body');
 const modalClose = document.getElementById('modal-close');
 const resetAll = document.getElementById('reset-all');
 
+// ===== CSV Parser =====
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cell += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        row.push(cell);
+        cell = '';
+      } else if (ch === '\r' || ch === '\n') {
+        if (ch === '\r' && next === '\n') i++;
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = '';
+      } else {
+        cell += ch;
+      }
+    }
+  }
+  if (cell || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows;
+}
+
 // ===== Data Fetching =====
 async function fetchConsultants() {
   try {
     const response = await fetch(SHEET_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const text = await response.text();
 
-    // Parse the Google Visualization JSON response
-    // Response format: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-    const match = text.match(/google\.visualization\.Query\.setResponse\(({[\s\S]+})\)/);
-    if (!match) throw new Error('Could not parse spreadsheet data');
+    const rows = parseCSV(text);
+    // Spreadsheet has 2 header rows: row 0 is section groupings, row 1 is column names
+    if (rows.length < 3) throw new Error('Not enough data in spreadsheet');
 
-    const data = JSON.parse(match[1]);
-    const cols = data.table.cols;
-    const rows = data.table.rows;
-
-    // Map column indices
+    const headers = rows[1].map(h => h.trim());
     const colMap = {};
-    cols.forEach((col, i) => {
-      if (col.label) colMap[col.label.trim()] = i;
-    });
+    headers.forEach((h, i) => { if (h) colMap[h] = i; });
 
-    // Parse rows into consultant objects
-    return rows.map(row => {
-      const get = (label) => {
-        const idx = colMap[label];
-        if (idx === undefined) return '';
-        const cell = row.c[idx];
-        return cell && cell.v ? String(cell.v).trim() : '';
-      };
+    const get = (row, label) => {
+      const idx = colMap[label];
+      if (idx === undefined) return '';
+      return (row[idx] || '').trim();
+    };
 
-      return {
-        name: get('Name'),
-        email: get('Email'),
-        location: get('Location'),
-        expertise: get('Areas of experience and/or interest'),
-        languages: get('Working languages'),
-        linkedin: get('LinkedIn'),
-        notes: get("Anything else you'd like others to know"),
-      };
-    }).filter(c => c.name); // Filter out empty rows
+    return rows.slice(2).map(row => ({
+      name: get(row, 'Name'),
+      email: get(row, 'Email'),
+      location: get(row, 'Location'),
+      expertise: get(row, 'Areas of experience and/or interest'),
+      languages: get(row, 'Working languages'),
+      linkedin: get(row, 'LinkedIn'),
+      notes: get(row, "Anything else you'd like others to know"),
+    })).filter(c => c.name);
   } catch (err) {
     console.error('Failed to fetch consultant data:', err);
     loadingEl.innerHTML = `
