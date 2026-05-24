@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarot — Major Arcana Reading</title>
+  <meta name="description" content="A free tarot reading with the 22 Major Arcana. Three spreads, two interpretive voices.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="stars" aria-hidden="true"></div>
+
+  <header class="t-header">
+    <h1 class="t-title">Tarot</h1>
+    <p class="t-subtitle">A reading from the Major Arcana</p>
+  </header>
+
+  <main class="t-main">
+
+    <!-- Setup panel -->
+    <section class="setup" id="setup">
+      <div class="field">
+        <label for="question" class="field-label">Your question or situation <span class="optional">(optional)</span></label>
+        <textarea id="question" class="field-input" rows="2" placeholder="What would you like insight on?"></textarea>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Spread</span>
+        <div class="options" id="spread-options"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Voice</span>
+        <div class="options" id="voice-options"></div>
+      </div>
+
+      <button id="draw-btn" class="draw-btn">Draw the cards</button>
+    </section>
+
+    <!-- Reading panel -->
+    <section class="reading" id="reading" hidden>
+      <p class="reading-question" id="reading-question"></p>
+      <p class="reading-opening" id="reading-opening"></p>
+
+      <div class="cards" id="cards"></div>
+
+      <p class="reading-closing" id="reading-closing"></p>
+
+      <div class="reading-actions">
+        <button id="again-btn" class="secondary-btn">Draw again</button>
+        <button id="share-btn" class="secondary-btn">Copy share link</button>
+      </div>
+      <p class="share-confirm" id="share-confirm" hidden>Link copied to clipboard.</p>
+    </section>
+
+  </main>
+
+  <footer class="t-footer">
+    <p>Card data adapted from the <a href="https://github.com/Temple-of-Silicon/esoterica" target="_blank" rel="noopener">esoterica</a> tarot framework. Cards are drawn at random in your browser — nothing is sent anywhere.</p>
+  </footer>
+
+  <script src="cards.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

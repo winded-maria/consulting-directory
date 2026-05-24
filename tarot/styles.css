@@ -1,0 +1,359 @@
+:root {
+  --bg-deep: #0a0612;
+  --bg-mid: #15102a;
+  --bg-card-back: #1a1238;
+  --bg-card-face: #f5ecd7;
+  --ink: #ede4d3;
+  --ink-dim: #a89a7e;
+  --ink-dark: #2a1f3a;
+  --gold: #d4af6a;
+  --gold-bright: #f0cf8a;
+  --accent: #8a6dc4;
+  --border: rgba(212, 175, 106, 0.3);
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at top, #1d143a 0%, transparent 60%),
+    radial-gradient(ellipse at bottom, #2a1e4a 0%, transparent 70%),
+    var(--bg-deep);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle starfield using radial gradients */
+.stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 85% 20%, rgba(212,175,106,0.5), transparent),
+    radial-gradient(1px 1px at 15% 70%, rgba(212,175,106,0.4), transparent),
+    radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.4), transparent);
+  background-size: 100% 100%;
+  opacity: 0.7;
+}
+
+.t-header, .t-main, .t-footer { position: relative; z-index: 1; }
+
+.t-header {
+  text-align: center;
+  padding: 60px 24px 20px;
+}
+
+.t-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(48px, 8vw, 76px);
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+}
+
+.t-subtitle {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+
+.t-main {
+  flex: 1;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.setup {
+  background: rgba(26, 18, 56, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.field { margin-bottom: 24px; }
+.field:last-of-type { margin-bottom: 28px; }
+
+.field-label {
+  display: block;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  letter-spacing: 0.03em;
+}
+
+.optional { color: var(--ink-dim); font-size: 14px; font-family: 'Inter', sans-serif; font-style: italic; }
+
+.field-input {
+  width: 100%;
+  background: rgba(10, 6, 18, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 12px 14px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.field-input::placeholder { color: var(--ink-dim); }
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.option {
+  background: rgba(10, 6, 18, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  flex: 1 1 200px;
+}
+
+.option:hover {
+  border-color: var(--gold);
+  background: rgba(26, 18, 56, 0.7);
+}
+
+.option.selected {
+  border-color: var(--gold);
+  background: rgba(212, 175, 106, 0.12);
+  color: var(--gold-bright);
+}
+
+.option-label { font-weight: 600; display: block; margin-bottom: 2px; }
+.option-desc { font-size: 12px; color: var(--ink-dim); }
+.option.selected .option-desc { color: var(--ink); }
+
+.draw-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%);
+  border: none;
+  border-radius: 8px;
+  color: var(--ink-dark);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 14px rgba(212, 175, 106, 0.3);
+}
+
+.draw-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 175, 106, 0.45);
+}
+
+.draw-btn:active { transform: translateY(0); }
+
+/* Reading panel */
+.reading {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reading-question {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 18px;
+  padding: 0 12px;
+}
+
+.reading-opening {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 36px;
+  line-height: 1.6;
+}
+
+.cards {
+  display: grid;
+  gap: 28px;
+  margin-bottom: 36px;
+}
+
+.cards.spread-1 { grid-template-columns: 1fr; max-width: 380px; margin-left: auto; margin-right: auto; }
+.cards.spread-3 { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 720px) {
+  .cards.spread-3 { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--bg-card-face);
+  color: var(--ink-dark);
+  border-radius: 10px;
+  border: 1px solid var(--gold);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: cardReveal 0.6s ease-out both;
+}
+
+.card:nth-child(2) { animation-delay: 0.15s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(20px) rotateY(-15deg); }
+  to { opacity: 1; transform: translateY(0) rotateY(0); }
+}
+
+.card-position {
+  background: var(--ink-dark);
+  color: var(--gold-bright);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px 12px;
+}
+
+.card-glyph {
+  text-align: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 56px;
+  font-weight: 500;
+  color: var(--gold);
+  padding: 24px 0 8px;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(42, 31, 58, 0.15);
+}
+
+.card-name {
+  text-align: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink-dark);
+  padding: 12px 16px 18px;
+  letter-spacing: 0.03em;
+}
+
+.card-body { padding: 0 22px 22px; }
+
+.card-section { margin-bottom: 14px; }
+.card-section:last-child { margin-bottom: 0; }
+
+.card-section-label {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.card-section-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-dark);
+}
+
+.reading-closing {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 28px;
+  line-height: 1.6;
+}
+
+.reading-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.secondary-btn {
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+  background: rgba(212, 175, 106, 0.12);
+  color: var(--gold-bright);
+}
+
+.share-confirm {
+  text-align: center;
+  color: var(--gold);
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.t-footer {
+  text-align: center;
+  padding: 32px 24px 24px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.t-footer a { color: var(--gold); text-decoration: none; }
+.t-footer a:hover { text-decoration: underline; }
