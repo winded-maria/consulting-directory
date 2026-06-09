@@ -36,7 +36,7 @@ async function sha256(str) {
 
 // ===== Configuration =====
 const SHEET_ID = '1A-_lsUAWcPNtLrj9BLsODJBliTgKIzOtBJwzHth6xTY';
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0&headers=2`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0&headers=1`;
 
 // Predefined filter categories
 const EXPERTISE_TAGS = [
