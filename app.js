@@ -82,7 +82,10 @@ const resetAll = document.getElementById('reset-all');
 // ===== Data Fetching =====
 async function fetchConsultants() {
   try {
-    const response = await fetch(SHEET_URL);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(SHEET_URL, { signal: controller.signal });
+    clearTimeout(timeout);
     const text = await response.text();
 
     // Parse the Google Visualization JSON response
@@ -122,9 +125,9 @@ async function fetchConsultants() {
   } catch (err) {
     console.error('Failed to fetch consultant data:', err);
     loadingEl.innerHTML = `
-      <p style="color: var(--gray-500);">Could not load data. Please try refreshing the page.</p>
+      <p style="color: var(--gray-500);">Could not load data. Please check that the Google Sheet is shared publicly and try refreshing.</p>
     `;
-    return [];
+    return null;
   }
 }
 
@@ -576,7 +579,9 @@ async function init() {
   setupEventListeners();
   renderFilters();
 
-  allConsultants = await fetchConsultants();
+  const result = await fetchConsultants();
+  if (result === null) return; // error message already shown in loadingEl
+  allConsultants = result;
   buildDynamicTags(allConsultants);
   loadingEl.hidden = true;
 
