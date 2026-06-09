@@ -166,6 +166,22 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeUrl(url) {
+  try {
+    const u = new URL(url);
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? escapeHtml(url) : '';
+  } catch { return ''; }
+}
+
 // ===== Dynamic Tag Extraction =====
 const KNOWN_LANGUAGES = [
   'Arabic', 'Danish', 'English', 'French', 'German', 'Greek', 'Hebrew',
@@ -286,10 +302,11 @@ function renderCards(consultants) {
   emptyState.hidden = true;
   resultsCount.textContent = `${consultants.length} consultant${consultants.length !== 1 ? 's' : ''} found`;
 
-  cardsGrid.innerHTML = consultants.map((c, i) => {
+  cardsGrid.innerHTML = consultants.map((c) => {
+    const idx = allConsultants.indexOf(c);
     const tags = extractTags(c.expertise);
     const tagsHtml = tags.slice(0, 6).map(t =>
-      `<span class="tag">${t}</span>`
+      `<span class="tag">${escapeHtml(t)}</span>`
     ).join('') + (tags.length > 6 ? `<span class="tag">+${tags.length - 6}</span>` : '');
 
     const locationHtml = c.location ? `
@@ -297,7 +314,7 @@ function renderCards(consultants) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
         </svg>
-        ${c.location}
+        ${escapeHtml(c.location)}
       </div>` : '';
 
     const languagesHtml = c.languages ? `
@@ -305,13 +322,13 @@ function renderCards(consultants) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
           <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/>
         </svg>
-        ${c.languages}
+        ${escapeHtml(c.languages)}
       </div>` : '';
 
     return `
-      <div class="card" data-index="${i}" role="button" tabindex="0" aria-label="View ${c.name}'s profile">
+      <div class="card" data-index="${idx}" role="button" tabindex="0" aria-label="View ${escapeHtml(c.name)}'s profile">
         <div class="card-header">
-          <div class="card-name">${c.name}</div>
+          <div class="card-name">${escapeHtml(c.name)}</div>
         </div>
         ${locationHtml}
         ${tags.length > 0 ? `<div class="card-tags">${tagsHtml}</div>` : ''}
@@ -326,14 +343,15 @@ function openModal(consultant) {
   const tags = extractTags(c.expertise);
 
   let linksHtml = '';
-  if (c.linkedin) {
-    linksHtml += `<a href="${c.linkedin}" target="_blank" rel="noopener" class="modal-link linkedin">
+  const linkedinUrl = safeUrl(c.linkedin);
+  if (linkedinUrl) {
+    linksHtml += `<a href="${linkedinUrl}" target="_blank" rel="noopener" class="modal-link linkedin">
       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
       LinkedIn
     </a>`;
   }
   if (c.email) {
-    linksHtml += `<a href="mailto:${c.email}" class="modal-link email">
+    linksHtml += `<a href="mailto:${escapeHtml(c.email)}" class="modal-link email">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
       Email
     </a>`;
@@ -341,8 +359,9 @@ function openModal(consultant) {
 
   // Check if notes contain a URL (website)
   const urlMatch = c.notes && c.notes.match(/https?:\/\/[^\s,]+/);
-  if (urlMatch) {
-    linksHtml += `<a href="${urlMatch[0]}" target="_blank" rel="noopener" class="modal-link website">
+  const websiteUrl = urlMatch ? safeUrl(urlMatch[0]) : '';
+  if (websiteUrl) {
+    linksHtml += `<a href="${websiteUrl}" target="_blank" rel="noopener" class="modal-link website">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>
       Website
     </a>`;
@@ -352,33 +371,32 @@ function openModal(consultant) {
   let cleanNotes = c.notes || '';
   if (urlMatch) {
     cleanNotes = cleanNotes.replace(urlMatch[0], '').trim();
-    // Remove trailing/leading punctuation leftovers
     cleanNotes = cleanNotes.replace(/^[\s,;.]+|[\s,;.]+$/g, '');
   }
 
   modalBody.innerHTML = `
-    <div class="modal-name">${c.name}</div>
+    <div class="modal-name">${escapeHtml(c.name)}</div>
     ${c.location ? `<div class="modal-location">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
       </svg>
-      ${c.location}
+      ${escapeHtml(c.location)}
     </div>` : ''}
 
     <div class="modal-section">
       <div class="modal-section-title">Areas of Expertise</div>
-      <p>${c.expertise}</p>
-      ${tags.length > 0 ? `<div class="modal-tags" style="margin-top: 0.5rem">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+      <p>${escapeHtml(c.expertise)}</p>
+      ${tags.length > 0 ? `<div class="modal-tags" style="margin-top: 0.5rem">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
     </div>
 
     ${c.languages ? `<div class="modal-section">
       <div class="modal-section-title">Working Languages</div>
-      <p>${c.languages}</p>
+      <p>${escapeHtml(c.languages)}</p>
     </div>` : ''}
 
     ${cleanNotes ? `<div class="modal-section">
       <div class="modal-section-title">Additional Information</div>
-      <p>${cleanNotes}</p>
+      <p>${escapeHtml(cleanNotes)}</p>
     </div>` : ''}
 
     ${linksHtml ? `<div class="modal-links">${linksHtml}</div>` : ''}
@@ -494,8 +512,7 @@ function setupEventListeners() {
     const card = e.target.closest('.card');
     if (!card) return;
     const index = parseInt(card.dataset.index);
-    const filtered = getFilteredConsultants();
-    if (filtered[index]) openModal(filtered[index]);
+    if (allConsultants[index]) openModal(allConsultants[index]);
   });
 
   // Keyboard support for cards
